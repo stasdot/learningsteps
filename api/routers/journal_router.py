@@ -4,6 +4,7 @@ from typing import AsyncGenerator
 from fastapi import APIRouter, HTTPException, Depends
 
 from dependencies.auth import get_current_user
+from dependencies.rate_limit import rate_limit
 from repositories.postgres_repository import PostgresDB
 from services.entry_service import EntryService
 from models.entry import Entry, EntryCreate, EntryUpdate
@@ -15,7 +16,7 @@ router = APIRouter()
 # future cross-cutting concerns (intentionally left for later)
 # TODO: add authentication middleware -> NOT STARTED (using dependency-based auth stub instead)
 # TODO: add request validation middleware (beyond pydantic) -> PARTIALLY DONE (pydantic models)
-# TODO: add rate limiting -> NOT STARTED
+# TODO: add rate limiting -> DONE (basic dependency-based rate limiting)
 # TODO: add api versioning -> DONE (handled in main.py via /v1 prefix)
 # TODO: add response caching -> NOT STARTED
 
@@ -25,7 +26,10 @@ async def get_entry_service() -> AsyncGenerator[EntryService, None]:
         yield EntryService(db)
 
 
-@router.post("/entries")
+@router.post(
+    "/entries",
+    dependencies=[Depends(rate_limit)],
+)
 async def create_entry(
     entry_data: EntryCreate,
     entry_service: EntryService = Depends(get_entry_service),
@@ -80,7 +84,10 @@ async def get_entry(
     return entry
 
 
-@router.patch("/entries/{entry_id}")
+@router.patch(
+    "/entries/{entry_id}",
+    dependencies=[Depends(rate_limit)],
+)
 async def update_entry(
     entry_id: str,
     entry_update: EntryUpdate,
@@ -99,7 +106,10 @@ async def update_entry(
     return updated_entry
 
 
-@router.delete("/entries/{entry_id}")
+@router.delete(
+    "/entries/{entry_id}",
+    dependencies=[Depends(rate_limit)],
+)
 async def delete_entry(
     entry_id: str,
     entry_service: EntryService = Depends(get_entry_service),
@@ -115,7 +125,10 @@ async def delete_entry(
     return {"detail": "entry deleted successfully"}
 
 
-@router.delete("/entries")
+@router.delete(
+    "/entries",
+    dependencies=[Depends(rate_limit)],
+)
 async def delete_all_entries(
     entry_service: EntryService = Depends(get_entry_service),
     user: dict = Depends(get_current_user),  # auth required
