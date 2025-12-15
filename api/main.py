@@ -24,6 +24,10 @@ app = FastAPI(
     description="A simple learning journal API for tracking daily work, struggles, and intentions"
 )
 
-app.include_router(journal_router)
+app.include_router(
+    journal_router,
+    prefix="/v1",
+    tags=["journal"]
+)
 
 logger.info("LearningSteps API started")
