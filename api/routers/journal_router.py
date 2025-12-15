@@ -5,18 +5,18 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from repositories.postgres_repository import PostgresDB
 from services.entry_service import EntryService
-from models.entry import Entry, EntryCreate
+from models.entry import Entry, EntryCreate, EntryUpdate
 
 logger = logging.getLogger("journal")
 
 router = APIRouter()
 
 # future cross-cutting concerns (intentionally left for later)
-# TODO: add authentication middleware
-# TODO: add request validation middleware (beyond pydantic)
-# TODO: add rate limiting
-# TODO: add api versioning
-# TODO: add response caching
+# TODO: add authentication middleware \ NOT STARTED (out of scope for now)
+# TODO: add request validation middleware (beyond pydantic) \ PARTIALLY DONE (pydantic models added)
+# TODO: add rate limiting \ NOT STARTED
+# TODO: add api versioning \ DONE (handled in main.py via /v1 prefix)
+# TODO: add response caching \ NOT STARTED
 
 
 async def get_entry_service() -> AsyncGenerator[EntryService, None]:
@@ -81,11 +81,14 @@ async def get_entry(
 @router.patch("/entries/{entry_id}")
 async def update_entry(
     entry_id: str,
-    entry_update: dict,
+    entry_update: EntryUpdate,
     entry_service: EntryService = Depends(get_entry_service),
 ):
     """Update an existing journal entry."""
-    updated_entry = await entry_service.update_entry(entry_id, entry_update)
+    updated_entry = await entry_service.update_entry(
+        entry_id,
+        entry_update.model_dump(exclude_unset=True)
+    )
 
     if not updated_entry:
         raise HTTPException(status_code=404, detail="entry not found")
