@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from dependencies.auth import get_current_user
 from dependencies.rate_limit import rate_limit
+from dependencies.cache import get_cache, set_cache, invalidate_cache
 from repositories.postgres_repository import PostgresDB
 from services.entry_service import EntryService
 from models.entry import Entry, EntryCreate, EntryUpdate
@@ -18,7 +19,7 @@ router = APIRouter()
 # TODO: add request validation middleware (beyond pydantic) -> PARTIALLY DONE (pydantic models)
 # TODO: add rate limiting -> DONE (basic dependency-based rate limiting)
 # TODO: add api versioning -> DONE (handled in main.py via /v1 prefix)
-# TODO: add response caching -> NOT STARTED
+# TODO: add response caching -> DONE (in-memory cache for read endpoints)
 
 
 async def get_entry_service() -> AsyncGenerator[EntryService, None]:
@@ -45,6 +46,9 @@ async def create_entry(
 
         created_entry = await entry_service.create_entry(entry.model_dump())
 
+        # invalidate cached reads
+        invalidate_cache("entries:")
+
         return {
             "detail": "entry created successfully",
             "entry": created_entry,
@@ -62,12 +66,21 @@ async def create_entry(
 async def get_all_entries(
     entry_service: EntryService = Depends(get_entry_service),
 ):
-    """Get all journal entries (public)."""
+    """Get all journal entries (public, cached)."""
+
+    cache_key = "entries:all"
+    cached = get_cache(cache_key)
+    if cached:
+        return cached
+
     entries = await entry_service.get_all_entries()
-    return {
+    response = {
         "entries": entries,
         "count": len(entries),
     }
+
+    set_cache(cache_key, response)
+    return response
 
 
 @router.get("/entries/{entry_id}")
@@ -103,6 +116,9 @@ async def update_entry(
     if not updated_entry:
         raise HTTPException(status_code=404, detail="entry not found")
 
+    # invalidate cached reads
+    invalidate_cache("entries:")
+
     return updated_entry
 
 
@@ -122,6 +138,10 @@ async def delete_entry(
         raise HTTPException(status_code=404, detail="entry not found")
 
     await entry_service.delete_entry(entry_id)
+
+    # invalidate cached reads
+    invalidate_cache("entries:")
+
     return {"detail": "entry deleted successfully"}
 
 
@@ -135,4 +155,8 @@ async def delete_all_entries(
 ):
     """Delete all journal entries."""
     await entry_service.delete_all_entries()
+
+    # invalidate cached reads
+    invalidate_cache("entries:")
+
     return {"detail": "all entries deleted"}
