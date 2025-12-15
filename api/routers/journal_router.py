@@ -3,6 +3,7 @@ from typing import AsyncGenerator
 
 from fastapi import APIRouter, HTTPException, Depends
 
+from dependencies.auth import get_current_user
 from repositories.postgres_repository import PostgresDB
 from services.entry_service import EntryService
 from models.entry import Entry, EntryCreate, EntryUpdate
@@ -12,11 +13,11 @@ logger = logging.getLogger("journal")
 router = APIRouter()
 
 # future cross-cutting concerns (intentionally left for later)
-# TODO: add authentication middleware \ NOT STARTED (out of scope for now)
-# TODO: add request validation middleware (beyond pydantic) \ PARTIALLY DONE (pydantic models added)
-# TODO: add rate limiting \ NOT STARTED
-# TODO: add api versioning \ DONE (handled in main.py via /v1 prefix)
-# TODO: add response caching \ NOT STARTED
+# TODO: add authentication middleware -> NOT STARTED (using dependency-based auth stub instead)
+# TODO: add request validation middleware (beyond pydantic) -> PARTIALLY DONE (pydantic models)
+# TODO: add rate limiting -> NOT STARTED
+# TODO: add api versioning -> DONE (handled in main.py via /v1 prefix)
+# TODO: add response caching -> NOT STARTED
 
 
 async def get_entry_service() -> AsyncGenerator[EntryService, None]:
@@ -28,6 +29,7 @@ async def get_entry_service() -> AsyncGenerator[EntryService, None]:
 async def create_entry(
     entry_data: EntryCreate,
     entry_service: EntryService = Depends(get_entry_service),
+    user: dict = Depends(get_current_user),  # auth required
 ):
     """Create a new journal entry."""
     try:
@@ -56,7 +58,7 @@ async def create_entry(
 async def get_all_entries(
     entry_service: EntryService = Depends(get_entry_service),
 ):
-    """Get all journal entries."""
+    """Get all journal entries (public)."""
     entries = await entry_service.get_all_entries()
     return {
         "entries": entries,
@@ -69,7 +71,7 @@ async def get_entry(
     entry_id: str,
     entry_service: EntryService = Depends(get_entry_service),
 ):
-    """Get a single journal entry by ID."""
+    """Get a single journal entry by ID (public)."""
     entry = await entry_service.get_entry(entry_id)
 
     if not entry:
@@ -83,11 +85,12 @@ async def update_entry(
     entry_id: str,
     entry_update: EntryUpdate,
     entry_service: EntryService = Depends(get_entry_service),
+    user: dict = Depends(get_current_user),  # auth required
 ):
     """Update an existing journal entry."""
     updated_entry = await entry_service.update_entry(
         entry_id,
-        entry_update.model_dump(exclude_unset=True)
+        entry_update.model_dump(exclude_unset=True),
     )
 
     if not updated_entry:
@@ -100,6 +103,7 @@ async def update_entry(
 async def delete_entry(
     entry_id: str,
     entry_service: EntryService = Depends(get_entry_service),
+    user: dict = Depends(get_current_user),  # auth required
 ):
     """Delete a specific journal entry."""
     entry = await entry_service.get_entry(entry_id)
@@ -114,6 +118,7 @@ async def delete_entry(
 @router.delete("/entries")
 async def delete_all_entries(
     entry_service: EntryService = Depends(get_entry_service),
+    user: dict = Depends(get_current_user),  # auth required
 ):
     """Delete all journal entries."""
     await entry_service.delete_all_entries()
