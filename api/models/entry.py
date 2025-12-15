@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 from uuid import uuid4
@@ -21,39 +21,52 @@ class EntryCreate(BaseModel):
         json_schema_extra={"example": "Practice PostgreSQL queries and database design"}
     )
 
+    # TODO: Add field validation rules - DONE
+    # TODO: Add custom validators - DONE for stripping whitespace and checking emptiness
+    # TODO: Add schema versioning || skip for now
+    # TODO: Add data sanitization methods || minimal implementation
+
 class Entry(BaseModel):
-    # TODO: Add field validation rules
-    # TODO: Add custom validators
-    # TODO: Add schema versioning
-    # TODO: Add data sanitization methods
-    
     id: str = Field(
         default_factory=lambda: str(uuid4()),
-        description="Unique identifier for the entry (UUID)."
+        description="unique identifier for the entry (uuid)"
     )
+
     work: str = Field(
         ...,
         max_length=256,
-        description="What did you work on today?"
+        description="what did you work on today?"
     )
+
     struggle: str = Field(
         ...,
         max_length=256,
-        description="What’s one thing you struggled with today?"
+        description="what’s one thing you struggled with today?"
     )
+
     intention: str = Field(
         ...,
         max_length=256,
-        description="What will you study/work on tomorrow?"
+        description="what will you study/work on tomorrow?"
     )
-    created_at: Optional[datetime] = Field(
+
+    created_at: datetime = Field(
         default_factory=datetime.utcnow,
-        description="Timestamp when the entry was created."
+        description="timestamp when the entry was created"
     )
-    updated_at: Optional[datetime] = Field(
+
+    updated_at: datetime = Field(
         default_factory=datetime.utcnow,
-        description="Timestamp when the entry was last updated."
+        description="timestamp when the entry was last updated"
     )
+
+    @field_validator("work", "struggle", "intention")
+    @classmethod
+    def strip_and_validate_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("field must not be empty or whitespace")
+        return value
 
     model_config = {
         "json_encoders": {
