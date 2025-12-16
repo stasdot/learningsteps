@@ -10,7 +10,7 @@ from repositories.postgres_repository import PostgresDB
 from routers.journal_router import router as journal_router
 
 # load env vars from .env
-load_dotenv()
+load_dotenv(override=False)
 
 # TODO: move logging config to dedicated logging module
 # basic console logging
