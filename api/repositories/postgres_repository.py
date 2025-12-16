@@ -7,10 +7,6 @@ from typing import Any, Dict, List, Optional
 
 from repositories.interface_repository import DatabaseInterface
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is missing")
-
 
 class PostgresDB(DatabaseInterface):
     @staticmethod
@@ -36,7 +32,11 @@ class PostgresDB(DatabaseInterface):
         }
 
     async def __aenter__(self):
-        self.pool = await asyncpg.create_pool(DATABASE_URL)
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            raise ValueError("DATABASE_URL environment variable is missing")
+
+        self.pool = await asyncpg.create_pool(database_url)
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
