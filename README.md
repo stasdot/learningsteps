@@ -1,205 +1,221 @@
 # LearningSteps API
 
-Welcome to LearningSteps! LearningSteps is a Python FastAPI + PostgreSQL application that helps people track their daily learning journey. In this project, you will build, extend, and finally deploy LearningSteps to the cloud!
+LearningSteps is a FastAPI + PostgreSQL backend for tracking a personal learning journal.
+It is built and deployed as a real backend service with authentication, persistence, and cloud deployment.
 
+This project focuses on **practical backend engineering**, not local-only demos.
 
-## Table of Contents
+---
 
-- [🚀 Getting Started](#-getting-started)
-- [🎯 Development Tasks (Your Work!)](#-development-tasks-your-work)
-  - [1. API Implementation (Required)](#1-api-implementation-required)
-  - [2. Logging Setup (Required)](#2-logging-setup-required)
-  - [3. Data Model Improvements (Optional)](#3-data-model-improvements-optional)
-  - [4. Cloud CLI Setup (Required for Deployment)](#4-cloud-cli-setup-required-for-deployment)
-- [📊 Data Schema](#-data-schema)
-- [�️ Explore Your Database (Optional)](#️-explore-your-database-optional)
-- [🔧 Troubleshooting](#-troubleshooting)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
+## Overview
 
-## 🚀 Getting Started
+The API allows authenticated users to create, update, and delete journal entries, while allowing public read access to entries.
 
-### Prerequisites
+It is deployed on cloud virtual machines and runs behind nginx using systemd.
 
-- Git installed on your machine
-- Docker Desktop installed and running
-- VS Code with the Dev Containers extension
+---
 
-### 1. Fork and Clone the Repository
+## Features
 
-1. **Fork this repository** to your GitHub account by clicking the "Fork" button
-1. **Clone your fork** to your local machine:
+* FastAPI async REST API
+* PostgreSQL database (asyncpg)
+* JWT authentication
+* Rate limiting
+* Simple in-memory caching
+* Structured logging
+* nginx reverse proxy
+* systemd-managed service
+* Cloud VM deployment
 
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/learningsteps.git
-   ```
+---
 
-1. Move into the project directory:
+## API Endpoints
 
-   ```bash
-   cd learningsteps
-   ```
+### Authentication
 
-1. **Open in VS Code**:
+| Method | Endpoint      | Description               |
+| -----: | ------------- | ------------------------- |
+|   POST | `/auth/login` | Obtain a JWT access token |
 
-   ```bash
-   code .
-   ```
+Login uses query parameters (`username`, `password`) and returns a JWT token.
 
-### 2. Configure Your Environment (.env)
+---
 
-Environment variables live in a `.env` file (which is **git-ignored** so you don't accidentally commit secrets). This repo ships with a template named `.env-sample`.
+### Journal Entries (v1)
 
-1. Copy the sample file to create your real `.env`:
+| Method | Endpoint           | Auth Required | Description        |
+| -----: | ------------------ | ------------- | ------------------ |
+|   POST | `/v1/entries`      | Yes           | Create a new entry |
+|    GET | `/v1/entries`      | No            | Get all entries    |
+|    GET | `/v1/entries/{id}` | No            | Get a single entry |
+|  PATCH | `/v1/entries/{id}` | Yes           | Update an entry    |
+| DELETE | `/v1/entries/{id}` | Yes           | Delete an entry    |
+| DELETE | `/v1/entries`      | Yes           | Delete all entries |
 
-   ```bash
-   cp .env-sample .env
-   ```
+---
 
-### 3. Set Up Your Development Environment
+## Authentication Flow
 
-1. **Install the Dev Containers extension** in VS Code (if not already installed)
-2. **Reopen in container**: When VS Code detects the `.devcontainer` folder, click "Reopen in Container"
-   - Or use Command Palette (`Cmd/Ctrl + Shift + P`): `Dev Containers: Reopen in Container`
-3. **Wait for setup**: The API container will automatically install Python, dependencies, and configure your environment.
-   The PostgreSQL Database container will also automatically be created.
+1. Call `/auth/login`
+2. Receive an access token
+3. Send requests with the header:
 
-### 4. Verify the PostgreSQL Database Is Running
+```
+Authorization: Bearer <token>
+```
 
-In a terminal outside of VS Code, run:
+Protected endpoints require a valid token.
 
-   ```bash
-      docker ps
-   ```
+Swagger UI supports authentication via the **Authorize** button.
 
-You should see the postgres service running.
+---
 
-### 5. Run the API
+## Project Structure
 
-Make sure you are in the root of your project in the terminal (inside VS Code, while container is running):
+```
+api/
+├── main.py
+├── routers/
+│   ├── auth_router.py
+│   └── journal_router.py
+├── services/
+│   └── entry_service.py
+├── repositories/
+│   └── postgres_repository.py
+├── models/
+│   └── entry.py
+├── dependencies/
+│   ├── auth.py
+│   ├── rate_limit.py
+│   └── cache.py
+```
 
-   ```bash
-     ./start.sh
-   ```
+### Architecture rules
 
-### 6. Test Everything Works! 🎉
+* Routers handle HTTP and validation
+* Services coordinate business logic
+* Repositories handle database access
+* Timestamps and IDs are generated only in repositories
+* Models are used only for input and output validation
 
-1. **Visit the API docs**: http://localhost:8000/docs
-1. **Create your first entry** In the Docs UI Use the POST `/entries` endpoint to create a new journal entry.
-1. **View your entries** using the GET `/entries` endpoint to see what you've created!
+---
 
-**🎯 Once you can create and see entries, you're ready to start implementing the missing endpoints!**
+## Database Schema
 
-## Your Learning Goals
+```sql
+entries (
+  id          UUID PRIMARY KEY,
+  data        JSONB NOT NULL,
+  created_at  TIMESTAMP NOT NULL,
+  updated_at  TIMESTAMP NOT NULL
+)
+```
 
-Complete a learning journal API that allows users to:
+All timestamps are stored as UTC (naive) and generated in the repository layer.
 
-- ✅ **Store journal entries** (already implemented)
-- ✅ **Retrieve all journal entries** (already implemented)
-- ❌ **Retrieve single journal entry** (you need to implement)  
-- ❌ **Delete specific journal entries** (you need to implement)
-- ✅ **Update journal entries** (already implemented)
-- ✅ **Delete all entries** (already implemented)
-- ❌ **Setup logging** (you need to implement)
+---
 
-## 🎯 Development Tasks (Your Work!)
+## Running the API
 
-You'll use **feature branches** and **Pull Requests (PRs)** for each task. Complete these tasks in your forked repository using feature branches.
+### Requirements
 
-### 1. API Implementation (Required)
+* Python 3.10+
+* PostgreSQL
+* nginx
+* systemd (Linux)
 
-#### Task 1a: GET Single Entry Endpoint
+### Environment variables
 
-- Branch: `feature/get-single-entry`
-- [ ] Implement **GET /entries/{entry_id}** in `api/routers/journal_router.py`
+Create a `.env` file (not committed):
 
-#### Task 1b: DELETE Single Entry Endpoint
+```env
+DATABASE_URL=postgresql://user:password@db-host:5432/learningsteps
+JWT_SECRET_KEY=change-me
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=60
+```
 
-- Branch: `feature/delete-entry`
-- [ ] Implement **DELETE /entries/{entry_id}** in `api/routers/journal_router.py`
+---
 
-### 2. Logging Setup (Required)
+### Service management
 
-- Branch: `feature/logging-setup`
-- [ ] Configure logging in `api/main.py`
+The API runs as a systemd service:
 
-### 3. Data Model Improvements (Optional)
+```bash
+sudo systemctl start learningsteps-api
+sudo systemctl status learningsteps-api
+```
 
-- Branch: `feature/data-model-improvements`  
-- [ ] Add validators to `api/models/entry.py`
+nginx proxies external traffic to the application.
 
-### 4. Cloud CLI Setup (Required for Deployment)
+---
 
-- Branch: `feature/cloud-cli-setup`
-- [ ] Uncomment one CLI tool in `.devcontainer/devcontainer.json`
+## Testing
 
-## 📊 Data Schema
+### Health check
 
-Each journal entry follows this structure:
+```bash
+curl http://localhost/health
+```
 
-| Field       | Type      | Description                                | Validation                   |
-|-------------|-----------|--------------------------------------------|------------------------------|
-| id          | string    | Unique identifier (UUID)                   | Auto-generated               |
-| work        | string    | What did you work on today?                | Required, max 256 characters |
-| struggle    | string    | What's one thing you struggled with today? | Required, max 256 characters |
-| intention   | string    | What will you study/work on tomorrow?      | Required, max 256 characters |
-| created_at  | datetime  | When entry was created                     | Auto-generated UTC           |
-| updated_at  | datetime  | When entry was last updated                | Auto-updated UTC             |
+### Login
 
-## 🗄️ Explore Your Database (Optional)
+```bash
+curl -X POST "http://localhost/auth/login?username=admin&password=admin"
+```
 
-Want to see your data directly in the database? You can connect to PostgreSQL using VS Code's PostgreSQL extension:
+### Create entry
 
-### 1. Install PostgreSQL Extension
+```bash
+curl -X POST http://localhost/v1/entries \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "work": "worked on backend auth",
+    "struggle": "debugging datetime issues",
+    "intention": "keep layers clean"
+  }'
+```
 
-1. **Install the PostgreSQL extension** in VS Code (search for "PostgreSQL" by Chris Kolkman)
-2. **Restart VS Code** after installation
+---
 
-### 2. Connect to Your Database
+## Troubleshooting
 
-1. **Open the PostgreSQL extension** (click the PostgreSQL icon in the sidebar)
-2. **Click "Add Connection"** or the "+" button
-3. **Enter these connection details**:
-   - **Host name**: `postgres`
-   - **User name**: `postgres`
-   - **Password**: `postgres`
-   - **Port**: `5432`
-   - **Conection Type**: `Standard/No SSL`
-   - **Database**: `learning_journal`
-   - **Display name**: `Learning Journal DB` (or any name you prefer)
+### API does not start
 
-### 3. Explore Your Data
+* Check logs:
 
-1. **Expand your connection** in the PostgreSQL panel
-2. **Left-click on "Learning Journal DB" to expand**
-3. **Right-click on "learning_journal"**
-4. **Select "New Query"**
-5. **Type this query** to see all your entries:
+  ```bash
+  journalctl -u learningsteps-api -n 50
+  ```
+* Verify environment variables are set in systemd
+* Confirm PostgreSQL is reachable
 
-   ```sql
-   SELECT * FROM entries;
-   ```
+### Unauthorized responses
 
-6. **Run the query** to see all your journal data! (Ctrl/Cmd + Enter OR use the PostgreSQL command pallete: Run Query)
+* Token is missing, expired, or invalid
+* Re-authenticate via `/auth/login`
 
-You can now explore the database structure, see exactly how your data is stored, and run custom queries to understand PostgreSQL better.
+### Validation errors
 
-## 🔧 Troubleshooting
+* Request body does not match the expected schema
+* Check FastAPI error details in the response
 
-**If the API won't start:**
+---
 
-- Make sure the PostgreSQL container is running: `docker ps`
-- Check the container logs: `docker logs your-postgres-container-name`
-- Restart the database: `docker restart your-postgres-container-name`
+## Notes
 
-**If you can't connect to the database:**
+This project intentionally surfaces real backend issues such as:
 
-- Verify the `.env` file exists and has the correct DATABASE_URL
-- Make sure Docker Desktop is running
-- Try restarting the dev container: `Dev Containers: Rebuild Container`
+* JWT authentication wiring
+* systemd and virtual environment interaction
+* nginx reverse proxy debugging
+* datetime ownership across layers
+* asyncpg and PostgreSQL behavior
+* strict separation of concerns
 
-**If the dev container won't open:**
+---
 
-- Ensure Docker Desktop is running
-- Install the "Dev Containers" extension in VS Code
-- Try: `Dev Containers: Rebuild and Reopen in Container`
+## License
+
+MIT License.
