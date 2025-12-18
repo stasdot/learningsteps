@@ -38,13 +38,8 @@ async def create_entry(
 ):
     """Create a new journal entry."""
     try:
-        entry = Entry(
-            work=entry_data.work,
-            struggle=entry_data.struggle,
-            intention=entry_data.intention,
-        )
 
-        created_entry = await entry_service.create_entry(entry.model_dump())
+        created_entry = await entry_service.create_entry(entry_data.model_dump())
 
         # invalidate cached reads
         invalidate_cache("entries:")
