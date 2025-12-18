@@ -111,7 +111,7 @@ async def health_check():
 # ---------------------------------------------------------
 # TODO: introduce additional API versions when breaking changes are needed
 app.include_router(
-    auth_router
+    auth_router,
     journal_router,
     prefix="/v1",
     tags=["journal"]
