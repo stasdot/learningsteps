@@ -93,15 +93,6 @@ class Entry(BaseModel):
         description="what will you study/work on tomorrow?"
     )
 
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow,
-        description="timestamp when the entry was created"
-    )
-    updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
-        description="timestamp when the entry was last updated"
-    )
-
     # TODO: Add custom validators — DONE (strip whitespace + empty check)
 
     @field_validator("work", "struggle", "intention")
