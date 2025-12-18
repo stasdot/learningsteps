@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from repositories.postgres_repository import PostgresDB
 from routers.journal_router import router as journal_router
+from routers.auth_router import router as auth_router
 
 # load env vars from .env
 load_dotenv(override=False)
@@ -110,6 +111,7 @@ async def health_check():
 # ---------------------------------------------------------
 # TODO: introduce additional API versions when breaking changes are needed
 app.include_router(
+    auth_router
     journal_router,
     prefix="/v1",
     tags=["journal"]
