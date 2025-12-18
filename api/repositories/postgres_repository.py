@@ -2,7 +2,7 @@ import json
 import os
 import uuid
 import asyncpg
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from repositories.interface_repository import DatabaseInterface
@@ -11,7 +11,7 @@ from repositories.interface_repository import DatabaseInterface
 class PostgresDB(DatabaseInterface):
     @staticmethod
     def _now_utc() -> datetime:
-        return datetime.now(timezone.utc)
+        return datetime.utcnow()
 
     @staticmethod
     def datetime_serialize(obj: Any) -> str:
