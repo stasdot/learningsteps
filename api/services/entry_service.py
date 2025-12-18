@@ -1,10 +1,10 @@
-from datetime import datetime, timezone
 from typing import List, Dict, Any
 import logging
 
 from repositories.postgres_repository import PostgresDB
 
 logger = logging.getLogger("journal")
+
 
 class EntryService:
     def __init__(self, db: PostgresDB):
@@ -14,14 +14,7 @@ class EntryService:
     async def create_entry(self, entry_data: Dict[str, Any]) -> Dict[str, Any]:
         """Creates a new entry."""
         logger.info("Creating entry")
-        now = datetime.now(timezone.utc)
-        entry = {
-            **entry_data,
-            "created_at": now,
-            "updated_at": now
-        }
-        logger.debug("Entry created: %s", entry)
-        return await self.db.create_entry(entry)
+        return await self.db.create_entry(entry_data)
 
     async def get_all_entries(self) -> List[Dict[str, Any]]:
         """Gets all entries."""
@@ -43,6 +36,7 @@ class EntryService:
     async def update_entry(self, entry_id: str, updated_data: Dict[str, Any]) -> Dict[str, Any]:
         """Updates an existing entry."""
         logger.info("Updating entry %s", entry_id)
+
         existing_entry = await self.db.get_entry(entry_id)
         if not existing_entry:
             logger.warning("Entry %s not found. Update aborted.", entry_id)
@@ -51,9 +45,8 @@ class EntryService:
         updated_data = {
             **updated_data,
             "id": entry_id,
-            "updated_at": datetime.now(timezone.utc),
-            "created_at": existing_entry.get("created_at")
         }
+
         await self.db.update_entry(entry_id, updated_data)
         logger.debug("Entry %s updated", entry_id)
         return updated_data
