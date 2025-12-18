@@ -1,21 +1,24 @@
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-async def get_current_user(request: Request):
-    """
-    Authentication placeholder.
-    Later this will validate JWT / OAuth / etc.
-    """
+from services.auth_service import decode_access_token
 
-    auth_header = request.headers.get("Authorization")
+security = HTTPBearer()
 
-    if not auth_header:
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    token = credentials.credentials
+    payload = decode_access_token(token)
+
+    if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
+            detail="Invalid or expired token",
         )
 
-    # fake user for now (stub)
     return {
-        "id": "stub-user",
-        "role": "user",
+        "id": payload.get("sub"),
+        "role": payload.get("role"),
     }
