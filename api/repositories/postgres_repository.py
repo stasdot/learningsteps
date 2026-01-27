@@ -5,7 +5,7 @@ import asyncpg
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from repositories.interface_repository import DatabaseInterface
+from api.repositories.interface_repository import DatabaseInterface
 
 
 class PostgresDB(DatabaseInterface):

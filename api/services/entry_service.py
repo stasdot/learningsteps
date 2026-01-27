@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
 import logging
 
-from repositories.postgres_repository import PostgresDB
+from api.repositories.postgres_repository import PostgresDB
 
 logger = logging.getLogger("journal")
 

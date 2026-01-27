@@ -3,12 +3,12 @@ from typing import AsyncGenerator
 
 from fastapi import APIRouter, HTTPException, Depends
 
-from dependencies.auth import get_current_user
-from dependencies.rate_limit import rate_limit
-from dependencies.cache import get_cache, set_cache, invalidate_cache
-from repositories.postgres_repository import PostgresDB
-from services.entry_service import EntryService
-from models.entry import Entry, EntryCreate, EntryUpdate
+from api.dependencies.auth import get_current_user
+from api.dependencies.rate_limit import rate_limit
+from api.dependencies.cache import get_cache, set_cache, invalidate_cache
+from api.repositories.postgres_repository import PostgresDB
+from api.services.entry_service import EntryService
+from api.models.entry import Entry, EntryCreate, EntryUpdate
 
 logger = logging.getLogger("journal")
 

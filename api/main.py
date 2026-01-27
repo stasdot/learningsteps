@@ -6,9 +6,9 @@ import uuid
 from fastapi import FastAPI, Request
 from dotenv import load_dotenv
 
-from repositories.postgres_repository import PostgresDB
-from routers.journal_router import router as journal_router
-from routers.auth_router import router as auth_router
+from api.repositories.postgres_repository import PostgresDB
+from api.routers.journal_router import router as journal_router
+from api.routers.auth_router import router as auth_router
 
 # load env vars from .env
 load_dotenv(override=False)
