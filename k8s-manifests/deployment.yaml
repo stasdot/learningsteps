@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learningsteps-api
+  namespace: production
+  labels:
+    app: learningsteps-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: learningsteps-api
+  template:
+    metadata:
+      labels:
+        app: learningsteps-api
+    spec:
+      containers:
+      - name: api
+        image: learningstepsacr.azurecr.io/learningsteps-api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: learningsteps-secrets
+              key: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: learningsteps-secrets
+              key: JWT_SECRET_KEY
+        - name: JWT_ALGORITHM
+          valueFrom:
+            configMapKeyRef:
+              name: learningsteps-config
+              key: JWT_ALGORITHM
+        - name: JWT_EXPIRE_MINUTES
+          valueFrom:
+            configMapKeyRef:
+              name: learningsteps-config
+              key: JWT_EXPIRE_MINUTES
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5

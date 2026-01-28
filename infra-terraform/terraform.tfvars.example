@@ -1,0 +1,16 @@
+resource_group_name = "learningsteps-rg"
+location            = "westeurope"
+project_name        = "learningsteps"
+acr_name            = "learningstepsacr"
+keyvault_name       = "learningsteps-kv"
+environment         = "production"
+
+# cost optimization
+aks_node_count = 1
+aks_node_size  = "Standard_D2s_v6"
+
+tags = {
+  Project     = "LearningSteps-Capstone"
+  Environment = "Production"
+  ManagedBy   = "Terraform"
+}

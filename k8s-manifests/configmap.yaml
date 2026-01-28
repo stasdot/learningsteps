@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: learningsteps-config
+  namespace: production
+data:
+  JWT_ALGORITHM: "HS256"
+  JWT_EXPIRE_MINUTES: "60"
