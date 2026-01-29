@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init-job
+  namespace: production
+spec:
+  template:
+    spec:
+      containers:
+      - name: db-init
+        image: learningstepsacr.azurecr.io/learningsteps-api:latest
+        command: ["/usr/local/bin/python", "-c"]
+        args:
+          - |
+            import asyncpg
+            import asyncio
+            import os
+            
+            async def init_db():
+                print("Connecting to database...")
+                conn = await asyncpg.connect(os.environ['DATABASE_URL'])
+                try:
+                    print("Creating entries table...")
+                    await conn.execute('''
+                        CREATE TABLE IF NOT EXISTS entries (
+                            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                            data JSONB NOT NULL,
+                            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+                        )
+                    ''')
+                    
+                    print("Creating indexes...")
+                    await conn.execute('''
+                        CREATE INDEX IF NOT EXISTS idx_entries_created_at 
+                        ON entries(created_at)
+                    ''')
+                    await conn.execute('''
+                        CREATE INDEX IF NOT EXISTS idx_entries_updated_at 
+                        ON entries(updated_at)
+                    ''')
+                    
+                    # Verify tables exist
+                    result = await conn.fetch('''
+                        SELECT tablename FROM pg_tables 
+                        WHERE schemaname = 'public'
+                    ''')
+                    print(f"Tables in database: {[r['tablename'] for r in result]}")
+                    
+                    print("✅ Database initialized successfully!")
+                    
+                except Exception as e:
+                    print(f"❌ Error: {e}")
+                    raise
+                finally:
+                    await conn.close()
+            
+            asyncio.run(init_db())
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: learningsteps-secrets
+              key: DATABASE_URL
+      restartPolicy: Never
+  backoffLimit: 3
