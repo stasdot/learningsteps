@@ -1,221 +1,233 @@
-# LearningSteps API
+cat > README.md << 'EOF'
+# LearningSteps API - Cloud-Native DevOps Capstone
 
-LearningSteps is a FastAPI + PostgreSQL backend for tracking a personal learning journal.
-It is built and deployed as a real backend service with authentication, persistence, and cloud deployment.
+A production-ready FastAPI application deployed on Azure Kubernetes Service (AKS) with complete CI/CD automation, Infrastructure as Code, and security best practices.
 
-This project focuses on **practical backend engineering**, not local-only demos.
-
----
-
-## Overview
-
-The API allows authenticated users to create, update, and delete journal entries, while allowing public read access to entries.
-
-It is deployed on cloud virtual machines and runs behind nginx using systemd.
+🌐 **Live Demo:** https://api.learningsteps.cloud/docs
 
 ---
 
-## Features
-
-* FastAPI async REST API
-* PostgreSQL database (asyncpg)
-* JWT authentication
-* Rate limiting
-* Simple in-memory caching
-* Structured logging
-* nginx reverse proxy
-* systemd-managed service
-* Cloud VM deployment
-
----
-
-## API Endpoints
-
-### Authentication
-
-| Method | Endpoint      | Description               |
-| -----: | ------------- | ------------------------- |
-|   POST | `/auth/login` | Obtain a JWT access token |
-
-Login uses query parameters (`username`, `password`) and returns a JWT token.
-
----
-
-### Journal Entries (v1)
-
-| Method | Endpoint           | Auth Required | Description        |
-| -----: | ------------------ | ------------- | ------------------ |
-|   POST | `/v1/entries`      | Yes           | Create a new entry |
-|    GET | `/v1/entries`      | No            | Get all entries    |
-|    GET | `/v1/entries/{id}` | No            | Get a single entry |
-|  PATCH | `/v1/entries/{id}` | Yes           | Update an entry    |
-| DELETE | `/v1/entries/{id}` | Yes           | Delete an entry    |
-| DELETE | `/v1/entries`      | Yes           | Delete all entries |
-
----
-
-## Authentication Flow
-
-1. Call `/auth/login`
-2. Receive an access token
-3. Send requests with the header:
-
+## 🏗️ Architecture
 ```
-Authorization: Bearer <token>
-```
-
-Protected endpoints require a valid token.
-
-Swagger UI supports authentication via the **Authorize** button.
-
----
-
-## Project Structure
-
-```
-api/
-├── main.py
-├── routers/
-│   ├── auth_router.py
-│   └── journal_router.py
-├── services/
-│   └── entry_service.py
-├── repositories/
-│   └── postgres_repository.py
-├── models/
-│   └── entry.py
-├── dependencies/
-│   ├── auth.py
-│   ├── rate_limit.py
-│   └── cache.py
-```
-
-### Architecture rules
-
-* Routers handle HTTP and validation
-* Services coordinate business logic
-* Repositories handle database access
-* Timestamps and IDs are generated only in repositories
-* Models are used only for input and output validation
-
----
-
-## Database Schema
-
-```sql
-entries (
-  id          UUID PRIMARY KEY,
-  data        JSONB NOT NULL,
-  created_at  TIMESTAMP NOT NULL,
-  updated_at  TIMESTAMP NOT NULL
-)
-```
-
-All timestamps are stored as UTC (naive) and generated in the repository layer.
-
----
-
-## Running the API
-
-### Requirements
-
-* Python 3.10+
-* PostgreSQL
-* nginx
-* systemd (Linux)
-
-### Environment variables
-
-Create a `.env` file (not committed):
-
-```env
-DATABASE_URL=postgresql://user:password@db-host:5432/learningsteps
-JWT_SECRET_KEY=change-me
-JWT_ALGORITHM=HS256
-JWT_EXPIRE_MINUTES=60
+Internet (HTTPS)
+    ↓
+api.learningsteps.cloud
+    ↓
+NGINX Ingress + Let's Encrypt
+    ↓
+Kubernetes Service (ClusterIP)
+    ↓
+API Pods (2 replicas + Auto-scaling)
+    ↓
+PostgreSQL Flexible Server (Private Network)
 ```
 
 ---
 
-### Service management
+## 🚀 Features
 
-The API runs as a systemd service:
+- ✅ **Containerization** - Multi-stage Docker builds for production
+- ✅ **Infrastructure as Code** - Complete Azure infrastructure managed by Terraform
+- ✅ **Kubernetes Orchestration** - Deployment, auto-scaling, health checks
+- ✅ **CI/CD Pipeline** - Automated testing, security scanning, deployment
+- ✅ **HTTPS/SSL** - Automatic certificate management with Let's Encrypt
+- ✅ **Secret Management** - Azure Key Vault integration
+- ✅ **Private Networking** - Database isolated in private subnet
+- ✅ **Security Scanning** - Container vulnerabilities (Trivy), secrets (TruffleHog)
 
+---
+
+## 📦 Tech Stack
+
+**Application:**
+- FastAPI (Python 3.11)
+- PostgreSQL 15
+- JWT Authentication
+- AsyncPG
+
+**Infrastructure:**
+- Azure Kubernetes Service (AKS)
+- Azure Container Registry (ACR)
+- Azure PostgreSQL Flexible Server
+- Azure Key Vault
+- Azure Virtual Network
+
+**DevOps:**
+- Terraform (Infrastructure as Code)
+- GitHub Actions (CI/CD)
+- Docker (Containerization)
+- Kubernetes (Orchestration)
+- NGINX Ingress Controller
+- cert-manager (SSL certificates)
+
+---
+
+## 🚦 Getting Started
+
+### Prerequisites
+- Azure CLI
+- Terraform >= 1.0
+- kubectl
+- Docker
+
+### 1. Infrastructure Setup
 ```bash
-sudo systemctl start learningsteps-api
-sudo systemctl status learningsteps-api
+cd infra-terraform
+terraform init
+terraform apply
 ```
 
-nginx proxies external traffic to the application.
+See [infra-terraform/README.md](infra-terraform/README.md) for detailed setup.
+
+### 2. Deploy to Kubernetes
+```bash
+cd k8s-manifests
+
+# Create secrets from Key Vault
+# See SECRET-SETUP.md for instructions
+
+# Deploy application
+kubectl apply -f namespace.yaml
+kubectl apply -f configmap.yaml
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+kubectl apply -f hpa.yaml
+
+# Setup HTTPS
+kubectl apply -f cluster-issuer.yaml
+kubectl apply -f ingress.yaml
+
+# Initialize database
+kubectl apply -f db-init-job.yaml
+```
+
+See [k8s-manifests/README.md](k8s-manifests/README.md) for detailed deployment steps.
 
 ---
 
-## Testing
+## 🔄 CI/CD Pipeline
 
-### Health check
+The GitHub Actions pipeline automatically:
 
+1. **Tests** - Lints Python code, runs tests
+2. **Scans** - Checks for secrets and vulnerabilities
+3. **Builds** - Creates Docker image for AMD64
+4. **Pushes** - Uploads to Azure Container Registry
+5. **Deploys** - Updates Kubernetes deployment
+6. **Verifies** - Health checks after deployment
+
+**Trigger:** Push to `main` branch
+
+---
+
+## 🔐 Security
+
+- Private database with no public access
+- Network Security Groups restrict traffic
+- Secrets stored in Azure Key Vault
+- No hardcoded credentials in code
+- Automated vulnerability scanning
+- HTTPS enforced with valid SSL certificates
+
+---
+
+## 📊 API Endpoints
+
+**Health Check:**
 ```bash
-curl http://localhost/health
+GET /health
 ```
 
-### Login
-
+**Authentication:**
 ```bash
-curl -X POST "http://localhost/auth/login?username=admin&password=admin"
+POST /auth/login?username=admin&password=admin
 ```
 
-### Create entry
-
+**Entries:**
 ```bash
-curl -X POST http://localhost/v1/entries \
-  -H "Authorization: Bearer <TOKEN>" \
+GET    /v1/entries       # List all entries
+GET    /v1/entries/{id}  # Get specific entry
+POST   /v1/entries       # Create entry (auth required)
+PATCH  /v1/entries/{id}  # Update entry (auth required)
+DELETE /v1/entries/{id}  # Delete entry (auth required)
+```
+
+**Documentation:**
+- Swagger UI: https://api.learningsteps.cloud/docs
+- ReDoc: https://api.learningsteps.cloud/redoc
+
+---
+
+## 🧪 Testing
+```bash
+# Health check
+curl https://api.learningsteps.cloud/health
+
+# Get token
+TOKEN=$(curl -s -X POST "https://api.learningsteps.cloud/auth/login?username=admin&password=admin" | jq -r '.access_token')
+
+# Create entry
+curl -X POST https://api.learningsteps.cloud/v1/entries \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{
-    "work": "worked on backend auth",
-    "struggle": "debugging datetime issues",
-    "intention": "keep layers clean"
-  }'
+  -d '{"work": "test", "struggle": "none", "intention": "learn"}'
 ```
 
 ---
 
-## Troubleshooting
-
-### API does not start
-
-* Check logs:
-
-  ```bash
-  journalctl -u learningsteps-api -n 50
-  ```
-* Verify environment variables are set in systemd
-* Confirm PostgreSQL is reachable
-
-### Unauthorized responses
-
-* Token is missing, expired, or invalid
-* Re-authenticate via `/auth/login`
-
-### Validation errors
-
-* Request body does not match the expected schema
-* Check FastAPI error details in the response
+## 📝 Project Structure
+```
+learningsteps/
+├── .github/workflows/    # CI/CD pipelines
+├── api/                  # FastAPI application code
+├── infra-terraform/      # Terraform infrastructure
+├── k8s-manifests/        # Kubernetes manifests
+├── Dockerfile            # Container definition
+└── requirements.txt      # Python dependencies
+```
 
 ---
 
-## Notes
+## 🎓 Capstone Requirements Met
 
-This project intentionally surfaces real backend issues such as:
-
-* JWT authentication wiring
-* systemd and virtual environment interaction
-* nginx reverse proxy debugging
-* datetime ownership across layers
-* asyncpg and PostgreSQL behavior
-* strict separation of concerns
+- ✅ Containerization with production-grade Dockerfile
+- ✅ Infrastructure as Code (Terraform)
+- ✅ DevSecOps with security scanning in pipeline
+- ✅ CI/CD with GitHub Actions
+- ✅ Kubernetes orchestration on AKS
+- ✅ Horizontal Pod Autoscaling
+- ✅ HTTPS with automatic certificate management
+- ✅ Private database networking
+- ✅ Secret management with Azure Key Vault
 
 ---
 
-## License
+## 🧹 Cleanup
 
-MIT License.
+To destroy all infrastructure:
+```bash
+cd infra-terraform
+terraform destroy
+```
+
+**Warning:** This will delete all resources including the database!
+
+---
+
+## 📚 Documentation
+
+- [Terraform Setup Guide](infra-terraform/README.md)
+- [Kubernetes Deployment Guide](k8s-manifests/README.md)
+- [Secret Management](k8s-manifests/SECRET-SETUP.md)
+
+---
+
+## 👨‍💻 Author
+
+Stanislav Safaniuk
+
+---
+
+## 📜 License
+
+MIT License
