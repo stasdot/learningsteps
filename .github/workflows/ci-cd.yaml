@@ -1,4 +1,3 @@
-
 name: CI/CD Pipeline
 
 on:
@@ -64,11 +63,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: TruffleHog Secret Scan
+      # Full scan for manual runs (or first-time scans)
+      - name: TruffleHog Full Scan
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          docker run --rm -v "$PWD:/repo" trufflesecurity/trufflehog:latest \
+          filesystem /repo --fail
+
+      # Diff scan for PRs and pushes
+      - name: TruffleHog Diff Scan
+        if: github.event_name != 'workflow_dispatch'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
+          base: ${{ github.event.before }}
           head: HEAD
 
   # Job 3: Build and Scan Container
@@ -115,8 +123,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-and-scan]
     if: |
-        github.ref == 'refs/heads/main' &&
-        (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
