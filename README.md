@@ -1,4 +1,3 @@
-cat > README.md << 'EOF'
 # LearningSteps API - Cloud-Native DevOps Capstone
 
 A production-ready FastAPI application deployed on Azure Kubernetes Service (AKS) with complete CI/CD automation, Infrastructure as Code, and security best practices.
